@@ -29,6 +29,7 @@ namespace StokKomputer
         private readonly NumericUpDown numStorage = new();
         private readonly Button btnSimpan = new();
         private readonly Button btnBatal = new();
+        private int? modelId;
         public FormModel()
         {
             InitializeComponent();
@@ -41,6 +42,48 @@ namespace StokKomputer
             MaximizeBox = false;
 
             BangunForm();
+        }
+
+        public FormModel(int idModel) : this()
+        {
+            modelId = idModel;
+
+            Text = "Edit Model Komputer";
+            btnSimpan.Text = "Simpan Perubahan";
+
+            MuatDataModel();
+        }
+
+        private void MuatDataModel()
+        {
+            using var koneksi = Database.GetConnection();
+            using var perintah = koneksi.CreateCommand();
+
+            perintah.CommandText = """
+                SELECT brand, model_name, category, processor,
+                       ram_gb, storage_type, storage_gb
+                FROM computer_models
+                WHERE id = $id;
+                """;
+
+            perintah.Parameters.AddWithValue("$id", modelId!.Value);
+
+            using var reader = perintah.ExecuteReader();
+
+            if (!reader.Read())
+            {
+                MessageBox.Show("Model tidak ditemukan.");
+                Close();
+                return;
+            }
+
+            txtMerek.Text = reader["brand"].ToString();
+            txtModel.Text = reader["model_name"].ToString();
+            cmbKategori.SelectedItem = reader["category"].ToString();
+            txtProsesor.Text = reader["processor"].ToString();
+            numRam.Value = Convert.ToDecimal(reader["ram_gb"]);
+            cmbJenisStorage.SelectedItem = reader["storage_type"].ToString();
+            numStorage.Value = Convert.ToDecimal(reader["storage_gb"]);
         }
 
         private void BangunForm()
@@ -147,6 +190,7 @@ namespace StokKomputer
             layout.Controls.Add(input, 1, baris);
         }
 
+
         private void SimpanModel()
         {
             string merek = txtMerek.Text.Trim();
@@ -173,20 +217,41 @@ namespace StokKomputer
 
                 using var command = connection.CreateCommand();
 
-                command.CommandText = """
-                    INSERT INTO computer_models
-                    (
-                        brand, model_name, category,
-                        processor, ram_gb,
-                        storage_type, storage_gb
-                    )
-                    VALUES
-                    (
-                        $brand, $model, $category,
-                        $processor, $ram,
-                        $storageType, $storage
-                    );
-                    """;
+                if (modelId.HasValue)
+                {
+                    // Mode edit
+                    command.CommandText = """
+                UPDATE computer_models
+                SET brand = $brand,
+                    model_name = $model,
+                    category = $category,
+                    processor = $processor,
+                    ram_gb = $ram,
+                    storage_type = $storageType,
+                    storage_gb = $storage
+                WHERE id = $id;
+                """;
+
+                    command.Parameters.AddWithValue("$id", modelId.Value);
+                }
+                else
+                {
+                    // Mode tambah
+                    command.CommandText = """
+                INSERT INTO computer_models
+                (
+                    brand, model_name, category,
+                    processor, ram_gb,
+                    storage_type, storage_gb
+                )
+                VALUES
+                (
+                    $brand, $model, $category,
+                    $processor, $ram,
+                    $storageType, $storage
+                );
+                """;
+                }
 
                 command.Parameters.AddWithValue("$brand", merek);
                 command.Parameters.AddWithValue("$model", model);
@@ -201,10 +266,18 @@ namespace StokKomputer
                 command.Parameters.AddWithValue(
                     "$storage", (int)numStorage.Value);
 
-                command.ExecuteNonQuery();
+                int hasil = command.ExecuteNonQuery();
+
+                if (modelId.HasValue && hasil == 0)
+                {
+                    MessageBox.Show("Model tidak ditemukan.");
+                    return;
+                }
 
                 MessageBox.Show(
-                    "Model komputer berhasil disimpan!",
+                    modelId.HasValue
+                        ? "Model komputer berhasil diperbarui!"
+                        : "Model komputer berhasil disimpan!",
                     "Berhasil",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
@@ -221,5 +294,6 @@ namespace StokKomputer
                     MessageBoxIcon.Error);
             }
         }
+
     }
 }

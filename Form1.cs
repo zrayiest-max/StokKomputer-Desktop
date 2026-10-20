@@ -374,6 +374,24 @@ namespace StokKomputer
                     BukaDetailModel();
             };
 
+            var menuKlikKanan = new ContextMenuStrip();
+
+            menuKlikKanan.Items.Add(
+                "Edit Model",
+                null,
+                (_, _) => EditModelTerpilih()
+            );
+
+            grid.ContextMenuStrip = menuKlikKanan;
+            grid.CellMouseDown += (_, e) =>
+            {
+                if (e.Button == MouseButtons.Right && e.RowIndex >= 0)
+                {
+                    grid.ClearSelection();
+                    grid.Rows[e.RowIndex].Selected = true;
+                }
+            };
+
             btnResetFilter.Click += (_, _) =>
             {
                 txtCari.Clear();
@@ -420,8 +438,19 @@ namespace StokKomputer
                 }
             };
         }
+        private void EditModelTerpilih()
+        {
+            if (grid.CurrentRow == null)
+                return;
 
+            int idModel = Convert.ToInt32(
+                grid.CurrentRow.Cells["id"].Value);
 
+            using var form = new FormModel(idModel);
+
+            if (form.ShowDialog(this) == DialogResult.OK)
+                MuatData();
+        }
 
         private void SiapkanCombo(ComboBox combo, int lebar)
         {
