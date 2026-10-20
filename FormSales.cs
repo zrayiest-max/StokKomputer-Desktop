@@ -16,7 +16,10 @@ namespace StokKomputer
         private readonly ComboBox cmbSN = new();
         private readonly ComboBox cmbTipeHarga = new();
         private readonly TextBox txtHargaJual = new();
-        private readonly TextBox txtCatatan = new();
+        private readonly TextBox txtCatatan = new()
+        {
+            CharacterCasing = CharacterCasing.Upper
+        };
         private readonly Button btnSimpan = new();
         private readonly Label lblHargaAcuan = new();
         private readonly CheckBox chkPengingatScan = new();

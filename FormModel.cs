@@ -11,10 +11,19 @@ namespace StokKomputer
 {
     public partial class FormModel : Form
     {
-        private readonly TextBox txtMerek = new();
-        private readonly TextBox txtModel = new();
+        private readonly TextBox txtMerek = new()
+        {
+            CharacterCasing = CharacterCasing.Upper
+        };
+        private readonly TextBox txtModel = new()
+        {
+            CharacterCasing = CharacterCasing.Upper
+        };
         private readonly ComboBox cmbKategori = new();
-        private readonly TextBox txtProsesor = new();
+        private readonly TextBox txtProsesor = new()
+        {
+            CharacterCasing = CharacterCasing.Upper
+        };
         private readonly NumericUpDown numRam = new();
         private readonly ComboBox cmbJenisStorage = new();
         private readonly NumericUpDown numStorage = new();
@@ -91,15 +100,15 @@ namespace StokKomputer
             TambahBaris(layout, 5, "Jenis storage", cmbJenisStorage);
             TambahBaris(layout, 6, "Storage (GB)", numStorage);
 
-            btnSimpan.Text = "Simpan Model";
-            btnSimpan.Height = 36;
-            btnSimpan.Width = 140;
-            btnSimpan.Click += (_, _) => SimpanModel();
-
             btnBatal.Text = "Batal";
             btnBatal.Height = 36;
             btnBatal.Width = 100;
             btnBatal.Click += (_, _) => Close();
+
+            btnSimpan.Text = "Simpan Model";
+            btnSimpan.Height = 36;
+            btnSimpan.Width = 140;
+            btnSimpan.Click += (_, _) => SimpanModel();            
 
             var tombol = new FlowLayoutPanel
             {
@@ -108,8 +117,8 @@ namespace StokKomputer
                 WrapContents = false
             };
 
-            tombol.Controls.Add(btnBatal);
             tombol.Controls.Add(btnSimpan);
+            tombol.Controls.Add(btnBatal);
 
             layout.Controls.Add(tombol, 0, 8);
             layout.SetColumnSpan(tombol, 2);

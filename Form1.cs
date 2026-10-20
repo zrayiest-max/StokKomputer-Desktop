@@ -35,14 +35,16 @@ namespace StokKomputer
             MuatData();
         }
 
+
+
         private void BangunDashboard()
         {
+            // HEADER
             var header = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 85,
-                BackColor = Color.FromArgb(30, 64, 175),
-                Padding = new Padding(22, 12, 12, 12)
+                Height = 145,
+                BackColor = Color.FromArgb(30, 64, 175)
             };
 
             var judul = new Label
@@ -66,6 +68,20 @@ namespace StokKomputer
             header.Controls.Add(judul);
             header.Controls.Add(subjudul);
 
+            // KATEGORI DI HEADER
+            var menuPanel = new FlowLayoutPanel
+            {
+                Location = new Point(400, 15),
+                Size = new Size(550, 45),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                BackColor = Color.Transparent,
+                WrapContents = false,
+                AutoScroll = true
+            };
+
+            header.Controls.Add(menuPanel);
+
+            // FILTER
             var filter = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
@@ -80,22 +96,18 @@ namespace StokKomputer
             SiapkanCombo(cmbKategori, 200);
             SiapkanCombo(cmbMerek, 200);
             SiapkanCombo(cmbKetersediaan, 200);
+            SiapkanCombo(cmbTipeHarga, 160);
 
             cmbKategori.Items.AddRange(
                 new object[] { "Semua kategori", "Laptop", "AIO" });
             cmbKategori.SelectedIndex = 0;
 
             cmbKetersediaan.Items.AddRange(
-                new object[] {
-                    "Semua stok", "Ada stok", "Stok habis"
-                });
+                new object[] { "Semua stok", "Ada stok", "Stok habis" });
             cmbKetersediaan.SelectedIndex = 0;
-
-            SiapkanCombo(cmbTipeHarga, 160);
 
             cmbTipeHarga.Items.AddRange(
                 new object[] { "Umum", "Kantor", "Proyek" });
-
             cmbTipeHarga.SelectedIndex = 0;
 
             txtHargaMin.Width = 160;
@@ -108,7 +120,25 @@ namespace StokKomputer
             TambahFilter(filter, "Tipe Harga", cmbTipeHarga);
             TambahFilter(filter, "Harga min (Rp)", txtHargaMin);
             TambahFilter(filter, "Harga maks (Rp)", txtHargaMax);
+            var btnResetFilter = new Button
+            {
+                Text = "Reset Filter",
+                Size = new Size(120, 38),
+                BackColor = Color.FromArgb(71, 85, 105),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                Cursor = Cursors.Hand,
+                Margin = new Padding(5, 22, 5, 5)
+            };
 
+            btnResetFilter.FlatAppearance.BorderSize = 0;
+            btnResetFilter.FlatAppearance.MouseOverBackColor =
+                Color.FromArgb(51, 65, 85);
+
+            filter.Controls.Add(btnResetFilter);
+
+            // TABEL STOK
             var bawah = new Panel
             {
                 Dock = DockStyle.Fill,
@@ -137,158 +167,57 @@ namespace StokKomputer
             bawah.Controls.Add(grid);
             bawah.Controls.Add(lblJumlah);
 
-
-            var btnTambah = new Button
+            // PEMBUAT TOMBOL SUBMENU
+            Button BuatTombol(
+                string teks,
+                int lebar = 150)
             {
-                Text = "+ Tambah Model",
-                Size = new Size(150, 38),
-                ForeColor = Color.White,
-                BackColor = Color.FromArgb(30, 64, 175),
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                Anchor = AnchorStyles.Top | AnchorStyles.Right,
-            };
+                var tombol = new Button
+                {
+                    Text = teks,
+                    Size = new Size(lebar, 38),
+                    ForeColor = Color.White,
+                    BackColor = Color.FromArgb(71, 85, 105),
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                    Cursor = Cursors.Hand,
+                    Margin = new Padding(5)
+                };
 
-            btnTambah.FlatAppearance.BorderSize = 0;
+                tombol.FlatAppearance.BorderSize = 0;
+                tombol.FlatAppearance.MouseOverBackColor =
+                    Color.FromArgb(51, 65, 85);
 
-            var btnPenjualan = new Button
-            {
-                Text = "+ Penjualan",
-                Size = new Size(150, 38),
-                ForeColor = Color.White,
-                BackColor = Color.FromArgb(22, 163, 74),
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                Anchor = AnchorStyles.Top | AnchorStyles.Right
-            };
-
-            btnPenjualan.FlatAppearance.BorderSize = 0;
-
-
-            var btnRiwayat = new Button
-            {
-                Text = "+ Riwayat Stok",
-                Size = new Size(150, 38),
-                ForeColor = Color.White,
-                BackColor = Color.FromArgb(71, 85, 105),
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                Anchor = AnchorStyles.Top | AnchorStyles.Right
-            };
-
-            btnRiwayat.FlatAppearance.BorderSize = 0;
-
-            var btnLaporan = new Button
-            {
-                Text = "+ Laporan Stok",
-                Size = new Size(150, 38),
-                ForeColor = Color.White,
-                BackColor = Color.FromArgb(40, 95, 120),
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                Anchor = AnchorStyles.Top | AnchorStyles.Right
-            };
-
-            btnLaporan.FlatAppearance.BorderSize = 0;
-
-
-            var btnBackup = new Button
-            {
-                Text = "Backup Database",
-                Size = new Size(155, 40),
-                BackColor = Color.FromArgb(37, 99, 235),
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9, FontStyle.Bold),
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand
-            };
-
-            btnBackup.FlatAppearance.BorderSize = 0;
-            btnBackup.FlatAppearance.MouseOverBackColor =
-                Color.FromArgb(29, 78, 216);
-
-            var btnRestore = new Button
-            {
-                Text = "Restore",
-                Size = new Size(150, 38),
-                ForeColor = Color.White,
-                BackColor = Color.FromArgb(40, 95, 120),
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                Anchor = AnchorStyles.Top | AnchorStyles.Right
-            };
-
-            btnLaporan.FlatAppearance.BorderSize = 0;
-
-            var btnReset = new Button
-            {
-                Text = "Reset",
-                Size = new Size(150, 38),
-                ForeColor = Color.White,
-                BackColor = Color.FromArgb(40, 95, 120),
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                Anchor = AnchorStyles.Top | AnchorStyles.Right
-            };
-
-            btnReset.FlatAppearance.BorderSize = 0;
-
-            header.Controls.Add(btnTambah);
-            header.Controls.Add(btnPenjualan);
-            header.Controls.Add(btnRiwayat);
-            header.Controls.Add(btnLaporan);
-            header.Controls.Add(btnBackup);
-            header.Controls.Add(btnRestore);
-            header.Controls.Add(btnReset);
-
-
-            void AturPosisiTombol()
-            {
-                btnTambah.Location = new Point(
-                    header.ClientSize.Width - btnTambah.Width - 20,
-                    (header.ClientSize.Height - btnTambah.Height) / 2
-                );
-
-                btnPenjualan.Location = new Point(
-                    btnTambah.Left - btnPenjualan.Width - 10,
-                    (header.ClientSize.Height - btnPenjualan.Height) / 2
-                );
-
-                btnRiwayat.Location = new Point(
-                    btnPenjualan.Left - btnRiwayat.Width - 10,
-                    (header.ClientSize.Height - btnRiwayat.Height) / 2
-                );
-
-                btnLaporan.Location = new Point(
-                    btnRiwayat.Left - btnLaporan.Width - 10,
-                    (header.ClientSize.Height - btnRiwayat.Height) / 2
-                );
-
-                btnBackup.Location = new Point(
-                    btnLaporan.Left - btnBackup.Width - 10,
-                    (header.ClientSize.Height - btnBackup.Height) / 2
-                );
-
-                btnRestore.Location = new Point(
-                    btnBackup.Left - btnRestore.Width - 10,
-                    (header.ClientSize.Height - btnRestore.Height) / 2
-                );
-
-                btnReset.Location = new Point(
-                    btnRestore.Left - btnReset.Width - 10,
-                    (header.ClientSize.Height - btnReset.Height) / 2
-                );
+                return tombol;
             }
 
+            var btnTambah = BuatTombol(
+                "+ Tambah Model");
 
-            AturPosisiTombol();
+            var btnPenjualan = BuatTombol(
+                "+ Penjualan");
 
-            header.Resize += (_, _) => AturPosisiTombol();
+            var btnRiwayat = BuatTombol(
+                "Riwayat Stok");
 
+            var btnLaporan = BuatTombol(
+                "Penjualan");
+
+            var btnBackup = BuatTombol(
+                "Backup Database");
+
+            var btnRestore = BuatTombol(
+                "Restore Database");
+
+            var btnReset = BuatTombol(
+                "Reset Toko");
+
+            // EVENT TOMBOL
             btnTambah.Click += (_, _) => BukaFormModel();
             btnBackup.Click += (_, _) => BackupDatabase();
             btnRestore.Click += (_, _) => RestoreDatabase();
             btnReset.Click += (_, _) => ResetSeluruhToko();
+
             btnRiwayat.Click += (_, _) =>
             {
                 using var form = new FormRiwayatStok();
@@ -306,47 +235,193 @@ namespace StokKomputer
                 using var form = new FormSales();
 
                 if (form.ShowDialog(this) == DialogResult.OK)
-                {
                     MuatData();
-                }
             };
 
-            btnTambah.BringToFront();
-            btnRiwayat.BringToFront();
-            btnPenjualan.BringToFront();
-            btnLaporan.BringToFront();
-            btnBackup.BringToFront();
-            btnRestore.BringToFront();
+            // PANEL SUBMENU DI DALAM HEADER
+            var kontenMenu = new FlowLayoutPanel
+            {
+                Location = new Point(400, 65),
+                Size = new Size(550, 55),
+                BackColor = Color.Transparent,
+                WrapContents = false,
+                Visible = false
+            };
 
+            header.Controls.Add(kontenMenu);
+
+            // TAMPILKAN SUBMENU DI BAWAH KATEGORI TERPILIH
+            void TampilkanKategori(string kategori, Button tombolKategori)
+            {
+                kontenMenu.SuspendLayout();
+                kontenMenu.Controls.Clear();
+
+                Button[] tombol = kategori switch
+                {
+                    "Inventaris" => new[] { btnTambah, btnRiwayat },
+                    "Transaksi" => new[] { btnPenjualan },
+                    "Laporan" => new[] { btnLaporan },
+                    _ => new[] { btnBackup, btnRestore, btnReset }
+                };
+
+                foreach (var tombolMenu in tombol)
+                    kontenMenu.Controls.Add(tombolMenu);
+
+                // Hitung posisi kategori terhadap header
+
+                kontenMenu.Location = new Point(
+                    menuPanel.Left,
+                    menuPanel.Bottom + 5);
+
+                //kontenMenu.Visible = true;
+                kontenMenu.BringToFront();
+
+                // Sisakan ruang untuk submenu
+                header.Height = 130;
+
+                kontenMenu.ResumeLayout(true);
+            }
+
+            // PEMBUAT TOMBOL KATEGORI
+            Button BuatKategori(string teks)
+            {
+                var tombol = new Button
+                {
+                    Text = teks,
+                    Size = new Size(130, 35),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.White,
+                    ForeColor = Color.FromArgb(30, 64, 175),
+                    Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                    Cursor = Cursors.Hand,
+                    Margin = new Padding(3)
+                };
+
+                tombol.FlatAppearance.BorderSize = 0;
+                tombol.FlatAppearance.MouseOverBackColor =
+                    Color.FromArgb(219, 234, 254);
+
+                tombol.Click += (_, _) =>
+                {
+                    if (kontenMenu.Visible &&
+                        kontenMenu.Tag?.ToString() == teks)
+                    {
+                        kontenMenu.Visible = false;
+                        kontenMenu.Tag = null;
+                        return;
+                    }
+
+                    TampilkanKategori(teks, tombol);
+                    kontenMenu.Tag = teks;
+                    kontenMenu.Visible = true;
+                    kontenMenu.BringToFront();
+                };
+
+                return tombol;
+            }
+
+            menuPanel.Controls.Add(BuatKategori("Inventaris"));
+            menuPanel.Controls.Add(BuatKategori("Transaksi"));
+            menuPanel.Controls.Add(BuatKategori("Laporan"));
+            menuPanel.Controls.Add(BuatKategori("Pengaturan"));
+
+            // ATUR POSISI MENU KATEGORI DI KANAN HEADER
+            void AturPosisiKategori()
+            {
+                menuPanel.Location = new Point(
+                    Math.Max(350, header.ClientSize.Width - menuPanel.Width - 20),
+                    15);
+            }
+
+            AturPosisiKategori();
+            header.Resize += (_, _) => AturPosisiKategori();
+
+            // SUSUNAN PANEL UTAMA
             Controls.Add(bawah);
             Controls.Add(filter);
             Controls.Add(header);
 
+            // EVENT FILTER
             txtCari.TextChanged += (_, _) => TerapkanFilter();
+
             cmbKategori.SelectedIndexChanged +=
                 (_, _) => TerapkanFilter();
+
             cmbMerek.SelectedIndexChanged +=
                 (_, _) => TerapkanFilter();
+
             cmbKetersediaan.SelectedIndexChanged +=
                 (_, _) => TerapkanFilter();
+
             cmbTipeHarga.SelectedIndexChanged +=
                 (_, _) => TerapkanFilter();
+
             txtHargaMin.TextChanged += (_, _) =>
             {
                 FormatInputHarga(txtHargaMin);
                 TerapkanFilter();
             };
+
             txtHargaMax.TextChanged += (_, _) =>
             {
                 FormatInputHarga(txtHargaMax);
                 TerapkanFilter();
             };
+
             grid.CellDoubleClick += (_, e) =>
             {
                 if (e.RowIndex >= 0)
                     BukaDetailModel();
             };
+
+            btnResetFilter.Click += (_, _) =>
+            {
+                txtCari.Clear();
+                cmbKategori.SelectedIndex = 0;
+                cmbMerek.SelectedIndex = 0;
+                cmbKetersediaan.SelectedIndex = 0;
+                cmbTipeHarga.SelectedIndex = 0;
+                txtHargaMin.Clear();
+                txtHargaMax.Clear();
+
+                TerapkanFilter();
+            };
+
+            grid.DataBindingComplete += (_, _) =>
+            {
+                foreach (DataGridViewRow row in grid.Rows)
+                {
+                    if (row.IsNewRow)
+                        continue;
+
+                    // Cari kolom stok tersedia
+                    var kolomStok = grid.Columns
+                        .Cast<DataGridViewColumn>()
+                        .FirstOrDefault(c =>
+                            c.HeaderText.Contains(
+                                "stok", StringComparison.OrdinalIgnoreCase));
+
+                    if (kolomStok == null)
+                        continue;
+
+                    var nilai = row.Cells[kolomStok.Index].Value;
+
+                    if (nilai != null &&
+                        int.TryParse(nilai.ToString(), out int stok))
+                    {
+                        row.DefaultCellStyle.BackColor =
+                            stok == 0
+                                ? Color.FromArgb(254, 226, 226)
+                                : Color.FromArgb(220, 252, 231);
+
+                        row.DefaultCellStyle.ForeColor =
+                            Color.FromArgb(30, 41, 59);
+                    }
+                }
+            };
         }
+
+
 
         private void SiapkanCombo(ComboBox combo, int lebar)
         {
