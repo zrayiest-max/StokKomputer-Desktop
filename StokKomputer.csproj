@@ -6,6 +6,11 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+
+    <AssemblyName>StokKomputer</AssemblyName>
+    <Product>Stok Komputer - Citra Persada</Product>
+    <Title>Stok Komputer - Citra Persada</Title>
+	  <ApplicationIcon>Assets/stok-kom.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
