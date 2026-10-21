@@ -430,7 +430,56 @@ namespace StokKomputer
                 throw;
             }
         }
+        public static void HapusModel(int idModel)
+        {
+            using var koneksi = GetConnection();
+            using var transaksi = koneksi.BeginTransaction();
 
+            try
+            {
+                using var perintah = koneksi.CreateCommand();
+                perintah.Transaction = transaksi;
+
+                perintah.CommandText = """
+            DELETE FROM sales
+            WHERE unit_id IN (
+                SELECT id FROM computer_units
+                WHERE model_id = $id
+            );
+
+            DELETE FROM stock_movements
+            WHERE unit_id IN (
+                SELECT id FROM computer_units
+                WHERE model_id = $id
+            );
+
+            DELETE FROM unit_prices
+            WHERE unit_id IN (
+                SELECT id FROM computer_units
+                WHERE model_id = $id
+            );
+
+            DELETE FROM model_prices
+            WHERE model_id = $id;
+
+            DELETE FROM computer_units
+            WHERE model_id = $id;
+
+            DELETE FROM computer_models
+            WHERE id = $id;
+            """;
+
+                perintah.Parameters.AddWithValue("$id", idModel);
+                perintah.ExecuteNonQuery();
+
+                transaksi.Commit();
+            }
+            catch
+            {
+                transaksi.Rollback();
+                throw;
+            }
+        }
 
     }
 }

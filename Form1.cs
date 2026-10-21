@@ -35,8 +35,6 @@ namespace StokKomputer
             MuatData();
         }
 
-
-
         private void BangunDashboard()
         {
             // HEADER
@@ -382,6 +380,12 @@ namespace StokKomputer
                 (_, _) => EditModelTerpilih()
             );
 
+            menuKlikKanan.Items.Add(
+                "Hapus Model",
+                null,
+                (_, _) => HapusModelTerpilih()
+            );
+
             grid.ContextMenuStrip = menuKlikKanan;
             grid.CellMouseDown += (_, e) =>
             {
@@ -437,6 +441,39 @@ namespace StokKomputer
                     }
                 }
             };
+        }
+
+        private void HapusModelTerpilih()
+        {
+            if (grid.CurrentRow == null)
+                return;
+
+            int idModel = Convert.ToInt32(
+                grid.CurrentRow.Cells["id"].Value);
+
+            var konfirmasi = MessageBox.Show(
+                "Model ini beserta seluruh unit, harga, " +
+                "dan riwayat penjualannya akan dihapus permanen.\n\n" +
+                "Yakin ingin melanjutkan?",
+                "Hapus Model",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+
+            if (konfirmasi != DialogResult.Yes)
+                return;
+
+            try
+            {
+                Database.HapusModel(idModel);
+                MuatData();
+
+                MessageBox.Show("Model berhasil dihapus.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Gagal menghapus model:\n" + ex.Message);
+            }
         }
         private void EditModelTerpilih()
         {

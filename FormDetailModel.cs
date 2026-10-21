@@ -36,6 +36,193 @@ namespace StokKomputer
             MuatDetail();
             MuatUnit();
             MuatHarga();
+
+            grid.CellEndEdit += (_, e) => SimpanPerubahanUnit(e.RowIndex);
+
+            grid.CellMouseDown += Grid_CellMouseDown;
+
+            var menuUnit = new ContextMenuStrip();
+            var itemHapus = new ToolStripMenuItem("Hapus Unit");
+
+            itemHapus.Click += (_, _) => HapusUnitTerpilih();
+
+            menuUnit.Items.Add(itemHapus);
+            grid.ContextMenuStrip = menuUnit;
+
+            grid.CellBeginEdit += (sender, e) =>
+            {
+                if (e.RowIndex < 0) return;
+
+                string status = Convert.ToString(
+                    grid.Rows[e.RowIndex].Cells["Status"].Value
+                ) ?? "";
+
+                if (status != "Tersedia")
+                {
+                    e.Cancel = true;
+                }
+            };
+        }
+
+        private void HapusUnitTerpilih()
+        {
+            if (grid.CurrentRow == null)
+                return;
+
+            if (Convert.ToString(
+                grid.CurrentRow.Cells["Status"].Value) != "Tersedia")
+            {
+                MessageBox.Show("Hanya unit berstatus Tersedia yang bisa dihapus.");
+                return;
+            }
+
+            string sn = Convert.ToString(
+                grid.CurrentRow.Cells["Serial Number"].Value) ?? "";
+
+            var konfirmasi = MessageBox.Show(
+                $"Hapus unit dengan SN {sn}?",
+                "Konfirmasi Hapus",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+
+            if (konfirmasi != DialogResult.Yes)
+                return;
+
+            try
+            {
+                int idUnit = Convert.ToInt32(
+                    grid.CurrentRow.Cells["id"].Value);
+
+                using var koneksi = Database.GetConnection();
+                using var transaksi = koneksi.BeginTransaction();
+
+                using var perintah = koneksi.CreateCommand();
+                perintah.Transaction = transaksi;
+
+                perintah.CommandText = """
+            DELETE FROM unit_prices WHERE unit_id = $id;
+            DELETE FROM stock_movements WHERE unit_id = $id;
+            DELETE FROM computer_units
+            WHERE id = $id AND status = 'Tersedia';
+            """;
+
+                perintah.Parameters.AddWithValue("$id", idUnit);
+
+                int hasil = perintah.ExecuteNonQuery();
+
+                if (hasil == 0)
+                {
+                    transaksi.Rollback();
+                    MessageBox.Show("Unit tidak terhapus. Periksa status unit.");
+                    MuatUnit();
+                    return;
+                }
+
+                transaksi.Commit();
+
+                MuatUnit();
+                MessageBox.Show("Unit berhasil dihapus.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Gagal menghapus unit:\n" + ex.Message);
+                MuatUnit();
+            }
+        }
+
+        private void Grid_CellMouseDown(object? sender, DataGridViewCellMouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Right || e.RowIndex < 0)
+                return;
+
+            grid.ClearSelection();
+            grid.Rows[e.RowIndex].Selected = true;
+            grid.CurrentCell = grid.Rows[e.RowIndex].Cells[
+                "Status"];
+
+            string status = Convert.ToString(
+                grid.Rows[e.RowIndex].Cells["Status"].Value) ?? "";
+
+            if (grid.ContextMenuStrip?.Items[0] is ToolStripMenuItem itemHapus)
+                itemHapus.Enabled = status == "Tersedia";
+        }
+
+        private void SimpanPerubahanUnit(int rowIndex)
+        {
+            if (rowIndex < 0 || grid.Rows[rowIndex].IsNewRow)
+                return;
+
+            var baris = grid.Rows[rowIndex];
+
+            string sn = Convert.ToString(
+                baris.Cells["Serial Number"].Value)?.Trim() ?? "";
+
+            string tanggal = Convert.ToString(
+                baris.Cells["Tanggal Masuk"].Value)?.Trim() ?? "";
+
+            if (string.IsNullOrWhiteSpace(sn))
+            {
+                MessageBox.Show("Serial Number wajib diisi.");
+                MuatUnit();
+                return;
+            }
+
+            if (!long.TryParse(
+                Convert.ToString(baris.Cells["Harga Modal"].Value),
+                out long harga) || harga < 0)
+            {
+                MessageBox.Show("Harga modal harus angka nol atau lebih.");
+                MuatUnit();
+                return;
+            }
+
+            try
+            {
+                using var koneksi = Database.GetConnection();
+                using var perintah = koneksi.CreateCommand();
+
+                perintah.CommandText = """
+            UPDATE computer_units
+            SET serial_number = $sn,
+                purchase_date = $tanggal,
+                purchase_price = $harga
+            WHERE id = $id
+              AND model_id = $modelId;
+            """;
+
+                // ID unit harus tersedia di grid agar baris tepat yang diperbarui
+                perintah.Parameters.AddWithValue(
+                    "$sn", sn);
+
+                perintah.Parameters.AddWithValue(
+                    "$tanggal",
+                    string.IsNullOrWhiteSpace(tanggal)
+                        ? DBNull.Value
+                        : tanggal);
+
+                perintah.Parameters.AddWithValue(
+                    "$harga", harga);
+
+                perintah.Parameters.AddWithValue(
+                    "$id", baris.Cells["id"].Value);
+
+                perintah.Parameters.AddWithValue(
+                    "$modelId", modelId);
+
+                perintah.ExecuteNonQuery();
+
+                MuatUnit();
+            }
+            catch (SqliteException ex)
+            {
+                MessageBox.Show(
+                    "Gagal menyimpan perubahan:\n" + ex.Message,
+                    "Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+
+                MuatUnit();
+            }
         }
 
         private void BangunForm()
@@ -107,7 +294,7 @@ namespace StokKomputer
             grid.AllowUserToDeleteRows = false;
             grid.MultiSelect = false;
             grid.SelectionMode =
-                DataGridViewSelectionMode.FullRowSelect;
+                DataGridViewSelectionMode.CellSelect;
             grid.AutoSizeColumnsMode =
                 DataGridViewAutoSizeColumnsMode.Fill;
             grid.BackgroundColor = Color.White;
@@ -137,7 +324,7 @@ namespace StokKomputer
             gridHarga.AllowUserToDeleteRows = false;
             gridHarga.MultiSelect = false;
             gridHarga.SelectionMode =
-                DataGridViewSelectionMode.FullRowSelect;
+                DataGridViewSelectionMode.CellSelect;
             gridHarga.AutoSizeColumnsMode =
                 DataGridViewAutoSizeColumnsMode.Fill;
             gridHarga.RowHeadersVisible = false;
@@ -220,14 +407,16 @@ namespace StokKomputer
 
             using var perintah = koneksi.CreateCommand();
             perintah.CommandText = @"
-                SELECT serial_number AS [Serial Number],
-                       purchase_date AS [Tanggal Masuk],
-                       purchase_price AS [Harga Modal],
-                       status AS [Status]
-                FROM computer_units
-                WHERE model_id = $id
-                ORDER BY id DESC;
-            ";
+        SELECT id,
+               serial_number AS [Serial Number],
+               purchase_date AS [Tanggal Masuk],
+               purchase_price AS [Harga Modal],
+               status AS [Status]
+        FROM computer_units
+        WHERE model_id = $id
+        ORDER BY id DESC;
+    ";
+
             perintah.Parameters.AddWithValue("$id", modelId);
 
             using var reader = perintah.ExecuteReader();
@@ -235,16 +424,39 @@ namespace StokKomputer
             var tabel = new System.Data.DataTable();
             tabel.Load(reader);
 
+            // Tampilkan data ke tabel
             grid.DataSource = null;
             grid.Columns.Clear();
             grid.DataSource = tabel;
 
-            if (grid.Columns.Contains("Harga Modal"))
+            // Aktifkan edit langsung di tabel
+            grid.ReadOnly = false;
+            grid.AllowUserToAddRows = false;
+            grid.AllowUserToDeleteRows = false;
+
+            // Sembunyikan ID dan kunci kolom yang tidak boleh diedit
+            grid.Columns["id"].Visible = false;
+            grid.Columns["id"].ReadOnly = true;
+            grid.Columns["Status"].ReadOnly = true;
+
+            // Atur kolom yang boleh diedit berdasarkan status unit
+            foreach (DataGridViewRow baris in grid.Rows)
             {
-                grid.Columns["Harga Modal"].DefaultCellStyle
-                    .Format = "N0";
+                string status = Convert.ToString(
+                    baris.Cells["Status"].Value
+                ) ?? "";
+
+                bool bisaEdit = status == "Tersedia";
+
+                baris.Cells["Serial Number"].ReadOnly = !bisaEdit;
+                baris.Cells["Tanggal Masuk"].ReadOnly = !bisaEdit;
+                baris.Cells["Harga Modal"].ReadOnly = !bisaEdit;
             }
 
+            // Format harga modal
+            grid.Columns["Harga Modal"].DefaultCellStyle.Format = "N0";
+
+            // Hitung total unit dan stok tersedia
             lblTotalUnit.Text = $"Total Unit: {tabel.Rows.Count}";
 
             int tersedia = 0;
@@ -252,7 +464,9 @@ namespace StokKomputer
             foreach (System.Data.DataRow baris in tabel.Rows)
             {
                 if (baris["Status"]?.ToString() == "Tersedia")
+                {
                     tersedia++;
+                }
             }
 
             lblStokTersedia.Text = $"Stok Tersedia: {tersedia}";

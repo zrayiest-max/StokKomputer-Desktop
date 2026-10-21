@@ -71,6 +71,7 @@ namespace StokKomputer
             cmbModel.DropDownStyle =
                 ComboBoxStyle.DropDownList;
             cmbModel.Dock = DockStyle.Fill;
+            cmbModel.Enabled = false;
 
             txtSerialNumbers.Multiline = true;
             txtSerialNumbers.ScrollBars = ScrollBars.Vertical;

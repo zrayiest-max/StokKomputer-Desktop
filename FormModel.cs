@@ -122,12 +122,12 @@ namespace StokKomputer
             cmbJenisStorage.DropDownStyle =
                 ComboBoxStyle.DropDownList;
             cmbJenisStorage.Items.AddRange(
-                new object[] { "SSD", "HDD"});
+                new object[] { "SSD", "HDD" });
             cmbJenisStorage.SelectedIndex = 0;
 
             numRam.Minimum = 0;
             numRam.Maximum = 1024;
-            numRam.Increment = 4;
+            numRam.Increment = 8;
             numRam.Value = 8;
 
             numStorage.Minimum = 0;
@@ -151,7 +151,7 @@ namespace StokKomputer
             btnSimpan.Text = "Simpan Model";
             btnSimpan.Height = 36;
             btnSimpan.Width = 140;
-            btnSimpan.Click += (_, _) => SimpanModel();            
+            btnSimpan.Click += (_, _) => SimpanModel();
 
             var tombol = new FlowLayoutPanel
             {
