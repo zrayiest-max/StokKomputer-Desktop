@@ -369,7 +369,8 @@ namespace StokKomputer
                        processor, ram_gb,
                        storage_type, storage_gb
                 FROM computer_models
-                WHERE id = $id;
+                WHERE id = $id
+                ORDER BY created_at DESC;
             ";
             perintah.Parameters.AddWithValue("$id", modelId);
 

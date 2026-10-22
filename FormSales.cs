@@ -1,12 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Text;
-using System.Windows.Forms;
-using Microsoft.Data.Sqlite;
-using System.Linq;
+﻿using System.Data;
 
 namespace StokKomputer
 {
@@ -36,10 +28,58 @@ namespace StokKomputer
 
         private readonly FlowLayoutPanel panelDaftarCard = new();
 
+        private readonly int? modelIdAwal;
+        //public FormSales() : this(null)
+        //{
+        //    InitializeComponent();
+        //    dgvKeranjang.AllowUserToAddRows = false;
+        //    Text = "Penjualan Komputer";
+        //    StartPosition = FormStartPosition.CenterScreen;
+        //    WindowState = FormWindowState.Maximized;
+        //    Size = new Size(1000, 500);
+        //    MinimumSize = new Size(600, 400);
 
-        public FormSales()
+        //    BangunForm();
+        //    MuatFilter();
+
+        //    txtHargaJual.TextChanged += TxtHargaJual_TextChanged;
+
+        //    cmbMerek.SelectedIndexChanged += (_, _) => MuatModel();
+        //    cmbKategori.SelectedIndexChanged += (_, _) => MuatModel();
+        //    txtCariModel.TextChanged += (_, _) => MuatModel();
+
+        //    MuatModel();
+        //    MuatTipeHarga();
+
+        //    cmbModel.SelectedIndexChanged += (_, _) =>
+        //    {
+        //        MuatSN();
+        //        MuatHargaAcuan();
+        //    };
+
+        //    cmbSN.SelectedIndexChanged += (_, _) => MuatHargaAcuan();
+
+        //    btnTambahKeranjang.Click += (_, _) => TambahKeKeranjang();
+        //    btnHapusKeranjang.Click += (_, _) =>
+        //    {
+        //        if (dgvKeranjang.SelectedRows.Count > 0)
+        //            dgvKeranjang.Rows.Remove(
+        //                dgvKeranjang.SelectedRows[0]);
+        //    };
+        //    MuatCardKeranjang();
+        //}
+
+        public FormSales() : this(null)
         {
+
+        }
+
+        public FormSales(int? modelId)
+        {
+            modelIdAwal = modelId;
+
             InitializeComponent();
+            dgvKeranjang.AllowUserToAddRows = false;
             Text = "Penjualan Komputer";
             StartPosition = FormStartPosition.CenterScreen;
             WindowState = FormWindowState.Maximized;
@@ -55,14 +95,21 @@ namespace StokKomputer
             cmbKategori.SelectedIndexChanged += (_, _) => MuatModel();
             txtCariModel.TextChanged += (_, _) => MuatModel();
 
-            MuatModel();
             MuatTipeHarga();
 
             cmbModel.SelectedIndexChanged += (_, _) =>
             {
-                MuatSN();
-                MuatHargaAcuan();
+                if (cmbModel.SelectedValue is int ||
+                    int.TryParse(
+                        Convert.ToString(cmbModel.SelectedValue),
+                        out _))
+                {
+                    MuatSN();
+                    MuatHargaAcuan();
+                }
             };
+
+            MuatModel();
 
             cmbSN.SelectedIndexChanged += (_, _) => MuatHargaAcuan();
 
@@ -72,8 +119,23 @@ namespace StokKomputer
                 if (dgvKeranjang.SelectedRows.Count > 0)
                     dgvKeranjang.Rows.Remove(
                         dgvKeranjang.SelectedRows[0]);
+
+                MuatCardKeranjang();
             };
+
             MuatCardKeranjang();
+
+            // Pilih model otomatis jika dibuka dari menu "Jual Model".
+            if (modelIdAwal.HasValue)
+            {
+                cmbModel.SelectedValue = modelIdAwal.Value;
+            }
+
+            Shown += (_, _) =>
+            {
+                MuatSN();
+                MuatHargaAcuan();
+            };
         }
         private void MuatFilter()
         {
@@ -246,7 +308,7 @@ namespace StokKomputer
             {
                 var field = new Panel
                 {
-                    Width = 700,
+                    Width = 500,
                     Height = tinggi,
                     Margin = new Padding(0, 0, 0, 12),
                     BackColor = Color.White
@@ -282,7 +344,7 @@ namespace StokKomputer
                 return field;
             }
 
-            kiri.Controls.Add(BuatJudul("Pilih Produk"));
+            //kiri.Controls.Add(BuatJudul("Pilih Produk"));
 
             txtCariModel.PlaceholderText =
                 "Ketik merek, model, atau spesifikasi...";
@@ -314,18 +376,18 @@ namespace StokKomputer
             // Tombol aksi dalam satu baris
             var panelAksi = new TableLayoutPanel
             {
-                Width = 700,
+                Width = 400,
                 Height = 44,
-                ColumnCount = 2,
-                RowCount = 1,
+                //ColumnCount = 2,
+                //RowCount = 1,
                 Margin = new Padding(0, 5, 0, 0),
                 BackColor = Color.White
             };
 
-            panelAksi.ColumnStyles.Add(
-                new ColumnStyle(SizeType.Percent, 65));
-            panelAksi.ColumnStyles.Add(
-                new ColumnStyle(SizeType.Percent, 35));
+            //panelAksi.ColumnStyles.Add(
+            //    new ColumnStyle(SizeType.Percent, 100));
+            //panelAksi.ColumnStyles.Add(
+            //    new ColumnStyle(SizeType.Percent, 35));
 
             btnTambahKeranjang.Text = "+ Tambah ke Keranjang";
             btnTambahKeranjang.Dock = DockStyle.Fill;
@@ -338,19 +400,19 @@ namespace StokKomputer
             btnTambahKeranjang.Font =
                 new Font("Segoe UI", 9F, FontStyle.Bold);
 
-            btnHapusKeranjang.Text = "Hapus Pilihan";
-            btnHapusKeranjang.Dock = DockStyle.Fill;
-            btnHapusKeranjang.Margin = new Padding(6, 0, 0, 0);
-            btnHapusKeranjang.BackColor =
-                Color.FromArgb(220, 75, 75);
-            btnHapusKeranjang.ForeColor = Color.White;
-            btnHapusKeranjang.FlatStyle = FlatStyle.Flat;
-            btnHapusKeranjang.FlatAppearance.BorderSize = 0;
-            btnHapusKeranjang.Font =
-                new Font("Segoe UI", 9F, FontStyle.Bold);
+            //btnHapusKeranjang.Text = "Hapus Pilihan";
+            //btnHapusKeranjang.Dock = DockStyle.Fill;
+            //btnHapusKeranjang.Margin = new Padding(6, 0, 0, 0);
+            //btnHapusKeranjang.BackColor =
+            //    Color.FromArgb(220, 75, 75);
+            //btnHapusKeranjang.ForeColor = Color.White;
+            //btnHapusKeranjang.FlatStyle = FlatStyle.Flat;
+            //btnHapusKeranjang.FlatAppearance.BorderSize = 0;
+            //btnHapusKeranjang.Font =
+            //    new Font("Segoe UI", 9F, FontStyle.Bold);
 
-            panelAksi.Controls.Add(btnTambahKeranjang, 0, 0);
-            panelAksi.Controls.Add(btnHapusKeranjang, 1, 0);
+            panelAksi.Controls.Add(btnTambahKeranjang);
+            //panelAksi.Controls.Add(btnHapusKeranjang, 1, 0);
 
             kiri.Controls.Add(panelAksi);
 
@@ -398,6 +460,7 @@ namespace StokKomputer
 
             var lblInfoKeranjang = new Label
             {
+                Name = "lblInfoKeranjang",
                 Text = "Belum ada unit di keranjang",
                 Dock = DockStyle.Top,
                 Height = 25,
@@ -479,6 +542,9 @@ namespace StokKomputer
                     ? CariNamaTipeHarga(tipeHargaId)
                     : "-";
 
+                string catatan = Convert.ToString(
+                    baris.Cells["catatan"].Value) ?? "-";
+
                 var card = new Panel
                 {
                     Width = Math.Max(250, panelDaftarCard.ClientSize.Width - 20),
@@ -488,6 +554,36 @@ namespace StokKomputer
                     Padding = new Padding(12),
                     BorderStyle = BorderStyle.FixedSingle,
                     Tag = unitId
+                };
+
+                var btnHapus = new Button
+                {
+                    Text = "✕",
+                    Width = 30,
+                    Height = 28,
+                    Dock = DockStyle.Right,
+                    FlatStyle = FlatStyle.Flat,
+                    ForeColor = Color.Firebrick,
+                    BackColor = Color.White,
+                    Cursor = Cursors.Hand
+                };
+
+                btnHapus.FlatAppearance.BorderSize = 0;
+                btnHapus.Click += (_, _) =>
+                {
+                    foreach (DataGridViewRow baris in dgvKeranjang.Rows)
+                    {
+                        if (baris.IsNewRow) continue;
+
+                        if (Convert.ToInt32(
+                                baris.Cells["unit_id"].Value) == unitId)
+                        {
+                            dgvKeranjang.Rows.Remove(baris);
+                            break;
+                        }
+                    }
+
+                    MuatCardKeranjang();
                 };
 
                 var lblModel = new Label
@@ -519,6 +615,15 @@ namespace StokKomputer
                     ForeColor = Color.FromArgb(100, 116, 139)
                 };
 
+                var lblCatatan = new Label
+                {
+                    Text = "Catatan: " + catatan,
+                    Dock = DockStyle.Top,
+                    Height = 22,
+                    Font = new Font("Segoe UI", 6.5F),
+                    ForeColor = Color.FromArgb(100, 116, 139)
+                };
+
                 var lblHarga = new Label
                 {
                     Text = "Rp " + harga.ToString("N0"),
@@ -533,7 +638,8 @@ namespace StokKomputer
                 card.Controls.Add(lblTipe);
                 card.Controls.Add(lblSN);
                 card.Controls.Add(lblModel);
-
+                card.Controls.Add(lblCatatan);
+                card.Controls.Add(btnHapus);
                 panelDaftarCard.Controls.Add(card);
             }
 
@@ -544,12 +650,22 @@ namespace StokKomputer
             if (lblTotal != null)
                 lblTotal.Text = $"Total: Rp {total:N0}";
 
-            var lblInfo = panelDaftarCard.Parent?.Parent?
-                .Controls.Find("lblInfoKeranjang", true)
-                .FirstOrDefault() as Label;
+            var lblInfo = Controls
+            .Find("lblInfoKeranjang", true)
+            .FirstOrDefault() as Label;
 
             if (lblInfo != null)
-                lblInfo.Text = $"{dgvKeranjang.Rows.Count} unit di keranjang";
+            {
+                int jumlahUnit = dgvKeranjang.Rows
+                    .Cast<DataGridViewRow>()
+                    .Count(r => !r.IsNewRow);
+
+                lblInfo.Text = jumlahUnit == 0
+                    ? "Belum ada unit di keranjang"
+                    : $"{jumlahUnit} unit di keranjang";
+
+                lblInfo.Visible = true;
+            }
 
             panelDaftarCard.ResumeLayout();
         }
@@ -605,6 +721,8 @@ namespace StokKomputer
                 dgvKeranjang.Columns.Add("sn", "Serial Number");
                 dgvKeranjang.Columns.Add("tipe_harga_id", "ID Tipe Harga");
                 dgvKeranjang.Columns.Add("harga", "Harga Jual");
+                dgvKeranjang.Columns.Add("catatan", "Catatan");
+                dgvKeranjang.Columns["catatan"].Visible = false;
 
                 dgvKeranjang.Columns["unit_id"].Visible = false;
                 dgvKeranjang.Columns["tipe_harga_id"].Visible = false;
@@ -615,7 +733,8 @@ namespace StokKomputer
                 cmbModel.Text,
                 cmbSN.Text,
                 Convert.ToInt32(cmbTipeHarga.SelectedValue),
-                harga.ToString("N0")
+                harga,
+                txtCatatan.Text.Trim()
             );
             MuatCardKeranjang();
 
@@ -678,13 +797,14 @@ namespace StokKomputer
             perintah.CommandText = """
         SELECT
             m.id,
+            m.category || ' | ' ||
             m.brand || ' ' ||
             m.model_name || ' | ' ||
-            COALESCE(m.processor, '') || ' | RAM ' ||
+            COALESCE(m.processor, '') || ' | ' ||
             COALESCE(m.ram_gb, 0) || ' GB | ' ||
             COALESCE(m.storage_type, '') || ' ' ||
-            COALESCE(m.storage_gb, 0) || ' GB | Stok: ' ||
-            COUNT(u.id) AS nama_model
+            COALESCE(m.storage_gb, 0) || ' GB'
+            AS nama_model
         FROM computer_models m
         JOIN computer_units u ON u.model_id = m.id
         WHERE u.status = 'Tersedia'
@@ -735,7 +855,7 @@ namespace StokKomputer
                 FROM computer_units
                 WHERE model_id = $modelId
                   AND status = 'Tersedia'
-                ORDER BY serial_number;
+                ORDER BY created_at ASC;
             """;
 
             perintah.Parameters.AddWithValue("$modelId", modelId);
@@ -754,11 +874,16 @@ namespace StokKomputer
             using var perintah = koneksi.CreateCommand();
 
             perintah.CommandText = """
-                SELECT id, name
-                FROM price_types
-                WHERE is_active = 1
-                ORDER BY id;
-            """;
+    SELECT id, name
+    FROM price_types
+    WHERE is_active = 1
+    ORDER BY CASE name
+        WHEN 'Kantor' THEN 1
+        WHEN 'Umum' THEN 2
+        WHEN 'Proyek' THEN 3
+        ELSE 4
+    END, name;
+""";
 
             using var reader = perintah.ExecuteReader();
             var tabel = new DataTable();
@@ -814,7 +939,11 @@ namespace StokKomputer
 
         private void SimpanPenjualan()
         {
-            if (dgvKeranjang.Rows.Count == 0)
+            int jumlahUnit = dgvKeranjang.Rows
+    .Cast<DataGridViewRow>()
+    .Count(r => !r.IsNewRow);
+
+            if (jumlahUnit == 0)
             {
                 MessageBox.Show("Keranjang masih kosong.");
                 return;
@@ -827,19 +956,30 @@ namespace StokKomputer
             {
                 foreach (DataGridViewRow baris in dgvKeranjang.Rows)
                 {
+                    if (baris.IsNewRow)
+                        continue;
                     int unitId = Convert.ToInt32(baris.Cells["unit_id"].Value);
-                    int tipeHargaId = Convert.ToInt32(baris.Cells["tipe_harga_id"].Value);
+                    int tipeHargaId = Convert.ToInt32(
+                    baris.Cells["tipe_harga_id"].Value);
 
-                    string angkaHarga = new string(
-                        Convert.ToString(baris.Cells["harga"].Value)!
-                            .Where(char.IsDigit).ToArray());
+                    object? nilaiHarga = baris.Cells["harga"].Value;
+                    string sn = Convert.ToString(
+                        baris.Cells["sn"].Value) ?? "-";
 
-                    if (!long.TryParse(angkaHarga, out long hargaJual) ||
-                        hargaJual <= 0)
+                    if (!decimal.TryParse(
+                            Convert.ToString(nilaiHarga),
+                            System.Globalization.NumberStyles.Number,
+                            System.Globalization.CultureInfo.CurrentCulture,
+                            out decimal hargaDecimal) ||
+                        hargaDecimal <= 0 ||
+                        hargaDecimal != decimal.Truncate(hargaDecimal) ||
+                        hargaDecimal > long.MaxValue)
                     {
                         throw new InvalidOperationException(
-                            "Ada harga jual yang tidak valid di keranjang.");
+                            "Harga tidak valid untuk SN " + sn);
                     }
+
+                    long hargaJual = (long)hargaDecimal;
 
                     // 1. Pastikan unit masih tersedia.
                     using var cekUnit = koneksi.CreateCommand();

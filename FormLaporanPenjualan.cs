@@ -138,7 +138,7 @@ namespace StokKomputer
             grid.SelectionMode =
                 DataGridViewSelectionMode.FullRowSelect;
             grid.AutoSizeColumnsMode =
-                DataGridViewAutoSizeColumnsMode.Fill;
+                DataGridViewAutoSizeColumnsMode.AllCells;
             grid.BackgroundColor = Color.White;
             grid.BorderStyle = BorderStyle.None;
             grid.RowHeadersVisible = false;
@@ -257,6 +257,10 @@ namespace StokKomputer
                     s.sold_at AS Tanggal,
                     cm.brand AS Merek,
                     cm.model_name AS Model,
+                    cm.processor AS CPU,
+                    cm.ram_gb AS RAM,
+                    cm.storage_gb AS Storage,
+                    cm.storage_type AS Type,
                     cu.serial_number AS [Serial Number],
                     COALESCE(pt.name, 'Tidak ditentukan')
                         AS [Tipe Harga],

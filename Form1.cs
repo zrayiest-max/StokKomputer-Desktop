@@ -90,11 +90,11 @@ namespace StokKomputer
                 AutoScroll = true
             };
 
-            txtCari.Width = 500;
-            SiapkanCombo(cmbKategori, 200);
-            SiapkanCombo(cmbMerek, 200);
-            SiapkanCombo(cmbKetersediaan, 200);
-            SiapkanCombo(cmbTipeHarga, 160);
+            txtCari.Width = 200;
+            SiapkanCombo(cmbKategori, 180);
+            SiapkanCombo(cmbMerek, 180);
+            SiapkanCombo(cmbKetersediaan, 180);
+            SiapkanCombo(cmbTipeHarga, 140);
 
             cmbKategori.Items.AddRange(
                 new object[] { "Semua kategori", "Laptop", "AIO" });
@@ -105,11 +105,11 @@ namespace StokKomputer
             cmbKetersediaan.SelectedIndex = 0;
 
             cmbTipeHarga.Items.AddRange(
-                new object[] { "Umum", "Kantor", "Proyek" });
+                new object[] { "Kantor", "Umum", "Proyek" });
             cmbTipeHarga.SelectedIndex = 0;
 
-            txtHargaMin.Width = 160;
-            txtHargaMax.Width = 160;
+            txtHargaMin.Width = 100;
+            txtHargaMax.Width = 100;
 
             TambahFilter(filter, "Cari model/prosesor", txtCari);
             TambahFilter(filter, "Kategori", cmbKategori);
@@ -375,6 +375,12 @@ namespace StokKomputer
             var menuKlikKanan = new ContextMenuStrip();
 
             menuKlikKanan.Items.Add(
+                "Jual Model",
+                null,
+                (_, _) => JualModelTerpilih()
+            );
+
+            menuKlikKanan.Items.Add(
                 "Edit Model",
                 null,
                 (_, _) => EditModelTerpilih()
@@ -393,6 +399,7 @@ namespace StokKomputer
                 {
                     grid.ClearSelection();
                     grid.Rows[e.RowIndex].Selected = true;
+                    grid.CurrentCell = grid.Rows[e.RowIndex].Cells[e.ColumnIndex];
                 }
             };
 
@@ -442,7 +449,22 @@ namespace StokKomputer
                 }
             };
         }
+        private void JualModelTerpilih()
+        {
+            if (grid.SelectedRows.Count == 0)
+                return;
 
+            // Ambil ID model dari baris yang dipilih.
+            int modelId = Convert.ToInt32(
+                grid.SelectedRows[0].Cells["id"].Value);
+
+            using var form = new FormSales(modelId);
+
+            if (form.ShowDialog() == DialogResult.OK)
+            {
+                MuatData();
+            }
+        }
         private void HapusModelTerpilih()
         {
             if (grid.CurrentRow == null)

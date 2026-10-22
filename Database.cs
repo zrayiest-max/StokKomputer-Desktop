@@ -185,7 +185,14 @@ namespace StokKomputer
                 AND pt.is_active = 1
 
             GROUP BY m.id
-            ORDER BY m.brand, m.model_name;
+            ORDER BY
+                CASE
+                    WHEN COUNT(DISTINCT CASE
+                        WHEN u.status = 'Tersedia' THEN u.id
+                    END) > 0 THEN 0
+                    ELSE 1
+                END ASC,
+                m.created_at DESC;
             """;
 
 
