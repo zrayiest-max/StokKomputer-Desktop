@@ -744,6 +744,7 @@ namespace StokKomputer
 
         private bool sedangMemformatHarga = false;
 
+
         private void TxtHargaJual_TextChanged(object? sender, EventArgs e)
         {
             if (sedangMemformatHarga)
@@ -753,8 +754,14 @@ namespace StokKomputer
 
             try
             {
+                // Hitung jumlah angka sebelum posisi cursor.
                 int posisiKursor = txtHargaJual.SelectionStart;
 
+                int jumlahAngkaSebelumCursor = txtHargaJual.Text
+                    .Take(posisiKursor)
+                    .Count(char.IsDigit);
+
+                // Ambil angka saja.
                 string angka = new string(
                     txtHargaJual.Text
                         .Where(char.IsDigit)
@@ -772,12 +779,25 @@ namespace StokKomputer
                     return;
                 }
 
+                // Format otomatis dengan pemisah ribuan.
                 string hasil = harga.ToString("N0");
 
                 txtHargaJual.Text = hasil;
-                txtHargaJual.SelectionStart = Math.Min(
-                    posisiKursor,
-                    txtHargaJual.Text.Length);
+
+                // Kembalikan cursor berdasarkan posisi angka.
+                int posisiBaru = 0;
+                int angkaTerhitung = 0;
+
+                while (posisiBaru < hasil.Length &&
+                       angkaTerhitung < jumlahAngkaSebelumCursor)
+                {
+                    if (char.IsDigit(hasil[posisiBaru]))
+                        angkaTerhitung++;
+
+                    posisiBaru++;
+                }
+
+                txtHargaJual.SelectionStart = posisiBaru;
             }
             finally
             {
@@ -874,16 +894,16 @@ namespace StokKomputer
             using var perintah = koneksi.CreateCommand();
 
             perintah.CommandText = """
-    SELECT id, name
-    FROM price_types
-    WHERE is_active = 1
-    ORDER BY CASE name
-        WHEN 'Kantor' THEN 1
-        WHEN 'Umum' THEN 2
-        WHEN 'Proyek' THEN 3
-        ELSE 4
-    END, name;
-""";
+                SELECT id, name
+                FROM price_types
+                WHERE is_active = 1
+                ORDER BY CASE name
+                    WHEN 'Kantor' THEN 1
+                    WHEN 'Umum' THEN 2
+                    WHEN 'Proyek' THEN 3
+                    ELSE 4
+                END, name;
+            """;
 
             using var reader = perintah.ExecuteReader();
             var tabel = new DataTable();

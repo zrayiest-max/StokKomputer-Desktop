@@ -127,7 +127,110 @@ namespace StokKomputer
 
                 """;
             command.ExecuteNonQuery();
+
+            EnsureSalesSchema(connection);
         }
+
+
+        private static void EnsureSalesSchema(SqliteConnection connection)
+        {
+            using var transaksi = connection.BeginTransaction();
+
+            try
+            {
+                bool sudahAdaKolomStatus = false;
+
+                using (var cek = connection.CreateCommand())
+                {
+                    cek.Transaction = transaksi;
+                    cek.CommandText = "PRAGMA table_info(sales);";
+
+                    using var reader = cek.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                        if (reader["name"].ToString() == "status")
+                        {
+                            sudahAdaKolomStatus = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!sudahAdaKolomStatus)
+                {
+                    using var perintah = connection.CreateCommand();
+                    perintah.Transaction = transaksi;
+
+                    perintah.CommandText = """
+                CREATE TABLE sales_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    unit_id INTEGER NOT NULL,
+                    price_type_id INTEGER,
+                    sold_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    sold_price INTEGER NOT NULL CHECK(sold_price >= 0),
+                    notes TEXT,
+                    status TEXT NOT NULL DEFAULT 'Selesai'
+                        CHECK(status IN ('Selesai', 'Dibatalkan')),
+                    cancelled_at TEXT,
+                    cancel_reason TEXT,
+
+                    FOREIGN KEY(unit_id)
+                        REFERENCES computer_units(id),
+
+                    FOREIGN KEY(price_type_id)
+                        REFERENCES price_types(id)
+                );
+
+                INSERT INTO sales_new (
+                    id,
+                    unit_id,
+                    price_type_id,
+                    sold_at,
+                    sold_price,
+                    notes,
+                    status
+                )
+                SELECT
+                    id,
+                    unit_id,
+                    price_type_id,
+                    sold_at,
+                    sold_price,
+                    notes,
+                    'Selesai'
+                FROM sales;
+
+                DROP TABLE sales;
+
+                ALTER TABLE sales_new RENAME TO sales;
+                """;
+
+                    perintah.ExecuteNonQuery();
+                }
+
+                using (var index = connection.CreateCommand())
+                {
+                    index.Transaction = transaksi;
+
+                    index.CommandText = """
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_sales_unit_aktif
+                ON sales(unit_id)
+                WHERE status = 'Selesai';
+                """;
+
+                    index.ExecuteNonQuery();
+                }
+
+                transaksi.Commit();
+            }
+            catch
+            {
+                transaksi.Rollback();
+                throw;
+            }
+        }
+
 
         public static System.Data.DataTable GetStockSummary()
         {

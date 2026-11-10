@@ -21,7 +21,9 @@ namespace StokKomputer
         private readonly Label lblTotalOmzet = new();
         private readonly Button btnTampilkan = new();
         private readonly Button btnExportCsv = new();
-
+        private readonly ContextMenuStrip menuPenjualan = new();
+        private readonly ToolStripMenuItem menuBatalkan = new("Batalkan Penjualan");
+        private readonly ToolStripMenuItem menuDetail = new("Detail Penjualan");
         private DataTable dataLaporan = new();
 
         private readonly CultureInfo budayaIndonesia =
@@ -168,6 +170,31 @@ namespace StokKomputer
 
             panelGrid.Controls.Add(grid);
 
+            menuPenjualan.Items.Add(menuDetail);
+            menuPenjualan.Items.Add(new ToolStripSeparator());
+            menuPenjualan.Items.Add(menuBatalkan);
+
+            grid.ContextMenuStrip = menuPenjualan;
+
+            grid.CellMouseDown += (_, e) =>
+            {
+                if (e.Button != MouseButtons.Right ||
+                    e.RowIndex < 0 ||
+                    e.ColumnIndex < 0)
+                    return;
+
+                if (!grid.Rows[e.RowIndex].Visible ||
+                    !grid.Columns[e.ColumnIndex].Visible)
+                    return;
+
+                grid.ClearSelection();
+                grid.Rows[e.RowIndex].Selected = true;
+                grid.CurrentCell = grid.Rows[e.RowIndex].Cells[e.ColumnIndex];
+            };
+
+            menuDetail.Click += (_, _) => TampilkanDetailPenjualan();
+            menuBatalkan.Click += (_, _) => BatalkanPenjualan();
+
             Controls.Add(panelGrid);
             Controls.Add(panelRingkasan);
             Controls.Add(panelFilter);
@@ -179,6 +206,333 @@ namespace StokKomputer
             btnExportCsv.Click +=
                 (_, _) => EksporPdf();
         }
+        private void TampilkanDetailPenjualan()
+        {
+            if (grid.CurrentRow == null)
+                return;
+
+            var baris = grid.CurrentRow;
+
+            string Ambil(string kolom)
+            {
+                object? nilai = baris.Cells[kolom].Value;
+
+                return nilai == null || nilai == DBNull.Value
+                    ? "-"
+                    : nilai.ToString() ?? "-";
+            }
+
+            string harga = baris.Cells["Harga Jual"].Value == DBNull.Value
+                ? "Rp0"
+                : Convert.ToInt64(baris.Cells["Harga Jual"].Value)
+                    .ToString("C0", budayaIndonesia);
+
+            using var dialog = new Form
+            {
+                Text = "Detail Penjualan",
+                StartPosition = FormStartPosition.CenterParent,
+                Size = new Size(700, 650),
+                MinimumSize = new Size(600, 500),
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                MaximizeBox = false,
+                MinimizeBox = false,
+                BackColor = Color.White
+            };
+
+            var panel = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(25),
+                AutoScroll = true
+            };
+
+            var judul = new Label
+            {
+                Text = "DETAIL PENJUALAN",
+                Font = new Font("Segoe UI", 18, FontStyle.Bold),
+                ForeColor = Color.FromArgb(30, 64, 175),
+                AutoSize = true,
+                Dock = DockStyle.Top
+            };
+
+            var tabel = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                AutoSize = true,
+                ColumnCount = 2,
+                Padding = new Padding(0, 20, 0, 10)
+            };
+
+            tabel.ColumnStyles.Add(
+                new ColumnStyle(SizeType.Absolute, 170));
+
+            tabel.ColumnStyles.Add(
+                new ColumnStyle(SizeType.Percent, 100));
+
+            void TambahBaris(string nama, string nilai)
+            {
+                int barisBaru = tabel.RowCount++;
+
+                tabel.RowStyles.Add(
+                    new RowStyle(SizeType.AutoSize));
+
+                var lblNama = new Label
+                {
+                    Text = nama,
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                    AutoSize = true,
+                    Padding = new Padding(5, 8, 5, 8)
+                };
+
+                var lblNilai = new Label
+                {
+                    Text = nilai,
+                    Font = new Font("Segoe UI", 10),
+                    AutoSize = true,
+                    MaximumSize = new Size(430, 0),
+                    Padding = new Padding(5, 8, 5, 8)
+                };
+
+                tabel.Controls.Add(lblNama, 0, barisBaru);
+                tabel.Controls.Add(lblNilai, 1, barisBaru);
+            }
+
+            TambahBaris("ID Transaksi", Ambil("ID"));
+            TambahBaris("Tanggal", Ambil("Tanggal"));
+
+            TambahBaris("Merek", Ambil("Merek"));
+            TambahBaris("Model", Ambil("Model"));
+            TambahBaris("Processor", Ambil("CPU"));
+            TambahBaris("RAM", Ambil("RAM") + " GB");
+            TambahBaris("Storage", Ambil("Storage") + " GB");
+            TambahBaris("Jenis Storage", Ambil("Type"));
+            TambahBaris("Serial Number", Ambil("SN"));
+
+            TambahBaris("Tipe Harga", Ambil("Tipe Harga"));
+            TambahBaris("Harga Jual", harga);
+            TambahBaris("Catatan", Ambil("Catatan"));
+
+            TambahBaris("Status", Ambil("Status"));
+            TambahBaris("Waktu Pembatalan", Ambil("Waktu Pembatalan"));
+            TambahBaris("Alasan Pembatalan", Ambil("Alasan Pembatalan"));
+
+            var tombolTutup = new Button
+            {
+                Text = "Tutup",
+                Dock = DockStyle.Bottom,
+                Height = 40,
+                BackColor = Color.FromArgb(30, 64, 175),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat
+            };
+
+            tombolTutup.Click += (_, _) => dialog.Close();
+
+            panel.Controls.Add(tabel);
+            panel.Controls.Add(judul);
+
+            dialog.Controls.Add(panel);
+            dialog.Controls.Add(tombolTutup);
+
+            dialog.ShowDialog(this);
+        }
+
+        private void BatalkanPenjualan()
+        {
+            if (grid.CurrentRow == null)
+                return;
+
+            int salesId = Convert.ToInt32(
+                grid.CurrentRow.Cells["ID"].Value);
+
+            string status = Convert.ToString(
+                grid.CurrentRow.Cells["Status"].Value) ?? "";
+
+            if (status != "Selesai")
+            {
+                MessageBox.Show("Transaksi ini sudah dibatalkan.");
+                return;
+            }
+
+            var konfirmasi = MessageBox.Show(
+                "Pastikan barang BELUM diserahkan kepada pembeli.\n\n" +
+                "Apakah kamu yakin ingin membatalkan penjualan ini?",
+                "Konfirmasi Pembatalan",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+
+            if (konfirmasi != DialogResult.Yes)
+                return;
+
+            string? alasan = MintaAlasanPembatalan();
+
+            if (string.IsNullOrWhiteSpace(alasan))
+                return;
+
+            using var koneksi = Database.GetConnection();
+            using var transaksi = koneksi.BeginTransaction();
+
+            try
+            {
+                int unitId;
+
+                using (var cek = koneksi.CreateCommand())
+                {
+                    cek.Transaction = transaksi;
+                    cek.CommandText = """
+                SELECT unit_id
+                FROM sales
+                WHERE id = $id
+                  AND status = 'Selesai';
+                """;
+
+                    cek.Parameters.AddWithValue("$id", salesId);
+
+                    object? hasil = cek.ExecuteScalar();
+
+                    if (hasil == null)
+                        throw new InvalidOperationException(
+                            "Transaksi tidak ditemukan atau sudah dibatalkan.");
+
+                    unitId = Convert.ToInt32(hasil);
+                }
+
+                using (var updateSales = koneksi.CreateCommand())
+                {
+                    updateSales.Transaction = transaksi;
+                    updateSales.CommandText = """
+                UPDATE sales
+                SET status = 'Dibatalkan',
+                    cancelled_at = CURRENT_TIMESTAMP,
+                    cancel_reason = $alasan
+                WHERE id = $id
+                  AND status = 'Selesai';
+                """;
+
+                    updateSales.Parameters.AddWithValue("$id", salesId);
+                    updateSales.Parameters.AddWithValue("$alasan", alasan);
+
+                    if (updateSales.ExecuteNonQuery() != 1)
+                        throw new InvalidOperationException(
+                            "Gagal membatalkan transaksi.");
+                }
+
+                using (var updateUnit = koneksi.CreateCommand())
+                {
+                    updateUnit.Transaction = transaksi;
+                    updateUnit.CommandText = """
+                UPDATE computer_units
+                SET status = 'Tersedia'
+                WHERE id = $unitId
+                  AND status = 'Terjual';
+                """;
+
+                    updateUnit.Parameters.AddWithValue("$unitId", unitId);
+
+                    if (updateUnit.ExecuteNonQuery() != 1)
+                        throw new InvalidOperationException(
+                            "Status unit gagal dikembalikan.");
+                }
+
+                using (var movement = koneksi.CreateCommand())
+                {
+                    movement.Transaction = transaksi;
+                    movement.CommandText = """
+                INSERT INTO stock_movements
+                    (unit_id, movement_type, notes)
+                VALUES
+                    ($unitId, 'Koreksi', $notes);
+                """;
+
+                    movement.Parameters.AddWithValue("$unitId", unitId);
+                    movement.Parameters.AddWithValue(
+                        "$notes",
+                        $"Pembatalan penjualan #{salesId}: {alasan}");
+
+                    movement.ExecuteNonQuery();
+                }
+
+                transaksi.Commit();
+
+                MessageBox.Show(
+                    "Penjualan berhasil dibatalkan.\nStok unit sudah dikembalikan.",
+                    "Pembatalan Berhasil",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+
+                MuatLaporan();
+            }
+            catch (Exception ex)
+            {
+                try { transaksi.Rollback(); }
+                catch { }
+
+                MessageBox.Show(
+                    "Pembatalan gagal:\n" + ex.Message,
+                    "Gagal",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        }
+
+        private string? MintaAlasanPembatalan()
+        {
+            using var dialog = new Form
+            {
+                Text = "Alasan Pembatalan",
+                StartPosition = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                ClientSize = new Size(400, 250),
+                MaximizeBox = false,
+                MinimizeBox = false
+            };
+
+            var label = new Label
+            {
+                Text = "Masukkan alasan pembatalan:",
+                Location = new Point(15, 15),
+                AutoSize = true
+            };
+
+            var input = new TextBox
+            {
+                Location = new Point(15, 45),
+                Width = 365,
+                Height = 55,
+                Multiline = true,
+                MaxLength = 300
+            };
+
+            var btnOK = new Button
+            {
+                Text = "Batalkan Penjualan",
+                DialogResult = DialogResult.OK,
+                Location = new Point(210, 120),
+                Width = 170,
+                Height = 80
+            };
+
+            var btnBatal = new Button
+            {
+                Text = "Kembali",
+                DialogResult = DialogResult.Cancel,
+                Location = new Point(115, 120),
+                Width = 85,
+                Height = 80
+            };
+
+            dialog.Controls.AddRange(
+                new Control[] { label, input, btnOK, btnBatal });
+
+            dialog.AcceptButton = btnOK;
+            dialog.CancelButton = btnBatal;
+
+            if (dialog.ShowDialog(this) != DialogResult.OK)
+                return null;
+
+            return input.Text.Trim();
+        }
+
 
         private void TambahFilter(
             FlowLayoutPanel panel,
@@ -261,11 +615,13 @@ namespace StokKomputer
                     cm.ram_gb AS RAM,
                     cm.storage_gb AS Storage,
                     cm.storage_type AS Type,
-                    cu.serial_number AS [Serial Number],
-                    COALESCE(pt.name, 'Tidak ditentukan')
-                        AS [Tipe Harga],
+                    cu.serial_number AS [SN],
+                    COALESCE(pt.name, 'Tidak ditentukan') AS [Tipe Harga],
                     s.sold_price AS [Harga Jual],
-                    s.notes AS Catatan
+                    s.notes AS Catatan,
+                    s.status AS Status,
+                    s.cancelled_at AS [Waktu Pembatalan],
+                    s.cancel_reason AS [Alasan Pembatalan]
                 FROM sales s
                 INNER JOIN computer_units cu
                     ON cu.id = s.unit_id
@@ -306,25 +662,20 @@ namespace StokKomputer
                     budayaIndonesia;
             }
 
-            int totalUnit = dataLaporan.Rows.Count;
+            var penjualanSelesai = dataLaporan.AsEnumerable()
+            .Where(r => r["Status"].ToString() == "Selesai")
+            .ToList();
 
-            long totalOmzet = 0;
+            int totalUnit = penjualanSelesai.Count;
 
-            foreach (DataRow baris in dataLaporan.Rows)
-            {
-                if (baris["Harga Jual"] != DBNull.Value)
-                {
-                    totalOmzet += Convert.ToInt64(
-                        baris["Harga Jual"]);
-                }
-            }
+            long totalOmzet = penjualanSelesai.Sum(r =>
+                r["Harga Jual"] == DBNull.Value
+                    ? 0L
+                    : Convert.ToInt64(r["Harga Jual"]));
 
-            lblTotalUnit.Text =
-                $"Unit Terjual: {totalUnit:N0}";
-
-            lblTotalOmzet.Text =
-                $"Omzet: {totalOmzet.ToString(
-                    "C0", budayaIndonesia)}";
+            // Update ringkasan
+            lblTotalUnit.Text = $"Unit Terjual: {totalUnit:N0}";
+            lblTotalOmzet.Text = $"Omzet: Rp{totalOmzet:N0}";
         }
 
 
