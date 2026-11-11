@@ -42,7 +42,7 @@ namespace StokKomputer
             grid.CellMouseDown += Grid_CellMouseDown;
 
             var menuUnit = new ContextMenuStrip();
-            var itemHapus = new ToolStripMenuItem("Hapus Unit");
+            var itemHapus = new ToolStripMenuItem("Nonaktifkan Unit");
 
             itemHapus.Click += (_, _) => HapusUnitTerpilih();
 
@@ -80,7 +80,7 @@ namespace StokKomputer
                 grid.CurrentRow.Cells["Serial Number"].Value) ?? "";
 
             var konfirmasi = MessageBox.Show(
-                $"Hapus unit dengan SN {sn}?",
+                $"Nonaktifkan SN {sn}? SN akan disembunyikan dari daftar stok, tetapi riwayat tetap disimpan.",
                 "Konfirmasi Hapus",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Warning);
@@ -100,10 +100,11 @@ namespace StokKomputer
                 perintah.Transaction = transaksi;
 
                 perintah.CommandText = """
-            DELETE FROM unit_prices WHERE unit_id = $id;
-            DELETE FROM stock_movements WHERE unit_id = $id;
-            DELETE FROM computer_units
-            WHERE id = $id AND status = 'Tersedia';
+            UPDATE computer_units
+            SET is_deleted = 1
+            WHERE id = $id
+              AND status = 'Tersedia'
+              AND is_deleted = 0;
             """;
 
                 perintah.Parameters.AddWithValue("$id", idUnit);
@@ -121,7 +122,7 @@ namespace StokKomputer
                 transaksi.Commit();
 
                 MuatUnit();
-                MessageBox.Show("Unit berhasil dihapus.");
+                MessageBox.Show("SN berhasil dinonaktifkan dan disembunyikan dari daftar stok.");
             }
             catch (Exception ex)
             {
@@ -415,6 +416,7 @@ namespace StokKomputer
                status AS [Status]
         FROM computer_units
         WHERE model_id = $id
+          AND is_deleted = 0
         ORDER BY id DESC;
     ";
 
@@ -586,8 +588,6 @@ namespace StokKomputer
                     MessageBoxIcon.Error);
             }
         }
-
-
 
         private void BukaFormUnit()
         {

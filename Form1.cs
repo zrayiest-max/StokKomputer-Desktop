@@ -200,6 +200,8 @@ namespace StokKomputer
 
             var btnLaporan = BuatTombol(
                 "Penjualan");
+            var btnSmartRestock = BuatTombol(
+                "Smart Restock");
 
             var btnBackup = BuatTombol(
                 "Backup Database");
@@ -215,6 +217,11 @@ namespace StokKomputer
             btnBackup.Click += (_, _) => BackupDatabase();
             btnRestore.Click += (_, _) => RestoreDatabase();
             btnReset.Click += (_, _) => ResetSeluruhToko();
+            btnSmartRestock.Click += (_, _) =>
+            {
+                using var form = new FormSmartRestock();
+                form.ShowDialog(this);
+            };
 
             btnRiwayat.Click += (_, _) =>
             {
@@ -258,7 +265,7 @@ namespace StokKomputer
                 {
                     "Inventaris" => new[] { btnTambah, btnRiwayat },
                     "Transaksi" => new[] { btnPenjualan },
-                    "Laporan" => new[] { btnLaporan },
+                    "Laporan" => new[] { btnLaporan, btnSmartRestock },
                     _ => new[] { btnBackup, btnRestore, btnReset }
                 };
 

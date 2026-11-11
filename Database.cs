@@ -1,8 +1,9 @@
-﻿using System;
+﻿using Microsoft.Data.Sqlite;
+using System;
 using System.Collections.Generic;
-using System.Text;
-using Microsoft.Data.Sqlite;
+using System.Data;
 using System.IO;
+using System.Text;
 
 namespace StokKomputer
 {
@@ -128,9 +129,41 @@ namespace StokKomputer
                 """;
             command.ExecuteNonQuery();
 
+            EnsureUnitSchema(connection);
             EnsureSalesSchema(connection);
         }
 
+
+        private static void EnsureUnitSchema(SqliteConnection connection)
+        {
+            using var command = connection.CreateCommand();
+            command.CommandText = "PRAGMA table_info(computer_units);";
+
+            bool sudahAdaKolom = false;
+
+            using (var reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    if (reader["name"].ToString() == "is_deleted")
+                    {
+                        sudahAdaKolom = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!sudahAdaKolom)
+            {
+                using var tambahKolom = connection.CreateCommand();
+                tambahKolom.CommandText = """
+                    ALTER TABLE computer_units
+                    ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0
+                    CHECK(is_deleted IN (0, 1));
+                    """;
+                tambahKolom.ExecuteNonQuery();
+            }
+        }
 
         private static void EnsureSalesSchema(SqliteConnection connection)
         {
@@ -304,6 +337,124 @@ namespace StokKomputer
             table.Load(reader);
             return table;
         }
+
+        public static DataTable GetSmartRestockSummary()
+        {
+            using var connection = GetConnection();
+            connection.Open();
+
+            using var command = connection.CreateCommand();
+
+            command.CommandText = """
+        WITH stok AS (
+            SELECT
+                m.category,
+                m.brand,
+                m.processor,
+                m.ram_gb,
+                m.storage_type,
+                m.storage_gb,
+                COUNT(u.id) AS StokTersedia,
+                COUNT(DISTINCT m.id) AS JumlahModel
+            FROM computer_models m
+            LEFT JOIN computer_units u
+                ON u.model_id = m.id
+                AND u.status = 'Tersedia'
+            GROUP BY
+                m.category,
+                m.brand,
+                m.processor,
+                m.ram_gb,
+                m.storage_type,
+                m.storage_gb
+        ),
+        penjualan AS (
+            SELECT
+                m.category,
+                m.brand,
+                m.processor,
+                m.ram_gb,
+                m.storage_type,
+                m.storage_gb,
+                COUNT(s.id) AS Terjual30Hari
+            FROM sales s
+            INNER JOIN computer_units u
+                ON u.id = s.unit_id
+            INNER JOIN computer_models m
+                ON m.id = u.model_id
+            WHERE s.status = 'Selesai'
+                AND s.sold_at >= datetime('now', '-30 days')
+                AND s.sold_at <= datetime('now')
+            GROUP BY
+                m.category,
+                m.brand,
+                m.processor,
+                m.ram_gb,
+                m.storage_type,
+                m.storage_gb
+        )
+        SELECT
+            stok.category AS Kategori,
+            stok.brand AS Merek,
+            stok.processor AS Prosesor,
+            stok.ram_gb AS RAM,
+            stok.storage_type AS JenisStorage,
+            stok.storage_gb AS KapasitasStorage,
+            stok.StokTersedia,
+            COALESCE(penjualan.Terjual30Hari, 0) AS Terjual30Hari,
+
+            CASE
+                WHEN COALESCE(penjualan.Terjual30Hari, 0) > stok.StokTersedia
+                THEN COALESCE(penjualan.Terjual30Hari, 0) - stok.StokTersedia
+                ELSE 0
+            END AS RekomendasiBeli,
+
+            stok.JumlahModel,
+
+            CASE
+                WHEN COALESCE(penjualan.Terjual30Hari, 0) > 0
+                    AND stok.StokTersedia = 0
+                    THEN 'Kritis'
+
+                WHEN COALESCE(penjualan.Terjual30Hari, 0) > stok.StokTersedia
+                    THEN 'Perlu Restok'
+
+                WHEN COALESCE(penjualan.Terjual30Hari, 0) = 0
+                    THEN 'Evaluasi'
+
+                ELSE 'Aman'
+            END AS StatusRestok
+
+        FROM stok
+        LEFT JOIN penjualan ON
+            IFNULL(stok.category, '') = IFNULL(penjualan.category, '')
+            AND IFNULL(stok.brand, '') = IFNULL(penjualan.brand, '')
+            AND IFNULL(stok.processor, '') = IFNULL(penjualan.processor, '')
+            AND IFNULL(stok.ram_gb, -1) = IFNULL(penjualan.ram_gb, -1)
+            AND IFNULL(stok.storage_type, '') = IFNULL(penjualan.storage_type, '')
+            AND IFNULL(stok.storage_gb, -1) = IFNULL(penjualan.storage_gb, -1)
+
+        ORDER BY
+            CASE
+                WHEN COALESCE(penjualan.Terjual30Hari, 0) > 0
+                    AND stok.StokTersedia = 0 THEN 0
+                WHEN COALESCE(penjualan.Terjual30Hari, 0) > stok.StokTersedia THEN 1
+                WHEN COALESCE(penjualan.Terjual30Hari, 0) = 0 THEN 2
+                ELSE 3
+            END,
+            COALESCE(penjualan.Terjual30Hari, 0) DESC,
+            stok.brand,
+            stok.processor;
+        """;
+
+            using var reader = command.ExecuteReader();
+
+            var table = new DataTable();
+            table.Load(reader);
+
+            return table;
+        }
+
 
         public static SqliteConnection GetConnection()
         {

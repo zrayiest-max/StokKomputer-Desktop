@@ -149,6 +149,7 @@ namespace StokKomputer
                 FROM computer_models m
                 JOIN computer_units u ON u.model_id = m.id
                 WHERE u.status = 'Tersedia'
+                  AND u.is_deleted = 0
                 ORDER BY m.brand;
                 """;
 
@@ -828,6 +829,7 @@ namespace StokKomputer
         FROM computer_models m
         JOIN computer_units u ON u.model_id = m.id
         WHERE u.status = 'Tersedia'
+          AND u.is_deleted = 0
           AND ($merek = '' OR m.brand = $merek)
           AND ($kategori = '' OR m.category = $kategori)
           AND (
@@ -875,6 +877,7 @@ namespace StokKomputer
                 FROM computer_units
                 WHERE model_id = $modelId
                   AND status = 'Tersedia'
+                  AND is_deleted = 0
                 ORDER BY created_at ASC;
             """;
 
@@ -1008,7 +1011,8 @@ namespace StokKomputer
                 SELECT model_id
                 FROM computer_units
                 WHERE id = $unitId
-                  AND status = 'Tersedia';
+                  AND status = 'Tersedia'
+                  AND is_deleted = 0;
             """;
                     cekUnit.Parameters.AddWithValue("$unitId", unitId);
 
@@ -1052,7 +1056,8 @@ namespace StokKomputer
                 UPDATE computer_units
                 SET status = 'Terjual'
                 WHERE id = $unitId
-                  AND status = 'Tersedia';
+                  AND status = 'Tersedia'
+                  AND is_deleted = 0;
             """;
                     ubahStatus.Parameters.AddWithValue("$unitId", unitId);
 
